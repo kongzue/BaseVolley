@@ -14,14 +14,19 @@
 ### 原因
 1) Volley的请求参数不支持连续添加，写法不够轻松简洁
 2) 我们项目主要使用Json交互，所以对请求结果默认转Json进行处理
-3) 提供统一返回监听器ResponseListener处理返回数据 //重新自定义了ErrorListener错误返回回调函数
+3) 提供统一返回监听器ResponseListener处理返回数据 //重新自定义了ErrorListener错误返回回调函数（已废除）
+4) 我们可能在加载网络数据前会调用一个例如 progressbarDialog 的加载进度对话框来表示正在加载数据，此时若将“请求成功”和“请求失败”单独放在两个回调函数中，会导致代码臃肿复杂，至少你必须在两个回调函数中都将 progressbarDialog.dismiss(); 掉，而我们使用统一返回监听器就可以避免代码臃肿的问题，更加简洁高效。
 
 ### 食用方法
 ```
+//创建正在加载UI表示
+ProgressbarDialog progressbarDialog = new ProgressbarDialog(this);
+progressbarDialog.show();
+
 //Http请求范例
 HttpRequest.getInstance(me)
-        //自定义请求Header头部信息
-        .setHeaders(new Parameter()
+        //自定义请求Header头部信息（选用）
+        .setHeaders(new Parameter()
                 .add("Charset", "UTF-8")
                 .add("Content-Type", "application/json")
                 .add("Accept-Encoding", "gzip,deflate")
@@ -34,7 +39,11 @@ HttpRequest.getInstance(me)
                 new ResponseListener() {
                     @Override
                     public void onResponse(JSONObject main, Exception error) {
-                        if (error == null) {
+                        //关闭进度对话框
+                        progressbarDialog.dismiss();
+                        
+                        //处理返回数据逻辑
+                        if (error == null) {
                             //请求成功处理
                         } else {
                             //请求失败处理
