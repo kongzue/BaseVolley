@@ -37,7 +37,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Created by ZhangChao on 2017/12/28.
- * ver:3.1
+ * ver:4.0
  */
 
 public class HttpRequest {

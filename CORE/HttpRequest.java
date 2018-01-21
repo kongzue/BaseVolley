@@ -18,7 +18,7 @@ import java.util.Map;
 
 /**
  * Created by ZhangChao on 2017/12/28.
- * ver:3.1
+ * ver:4.0
  */
 
 public class HttpRequest {
@@ -28,9 +28,21 @@ public class HttpRequest {
     //单例
     private static HttpRequest httpRequest;
 
+    private Parameter headers;
+
+    public Parameter getHeaders() {
+        return headers;
+    }
+
+    public HttpRequest setHeaders(Parameter headers) {
+        this.headers = headers;
+        return this;
+    }
+
     private HttpRequest() {
     }
 
+    //默认请求创建方法
     public static HttpRequest getInstance(Context context) {
         if (httpRequest == null) {
             synchronized (HttpRequest.class) {
@@ -38,6 +50,19 @@ public class HttpRequest {
                     httpRequest = new HttpRequest();
                     httpRequest.mQueue = Volley.newRequestQueue(context);         //创建请求队列
                 }
+            }
+        }
+        return httpRequest;
+    }
+
+    //信任指定证书的Https请求
+    public static HttpRequest getInstance(Context context, String SSLFileNameInAssets) {
+        if (httpRequest == null) {
+            synchronized (HttpRequest.class) {
+                SSLSocketFactory sslSocketFactory = initSSLSocketFactory(context, SSLFileNameInAssets);
+                HurlStack stack = new HurlStack(null, sslSocketFactory);
+                httpRequest = new HttpRequest();
+                httpRequest.mQueue = Volley.newRequestQueue(context, stack);         //创建请求队列
             }
         }
         return httpRequest;
@@ -55,9 +80,9 @@ public class HttpRequest {
 
     private void doRequest(String partUrl, final Parameter parameter, final ResponseListener listener, final int method) {
 
-        final String finalUrl = partUrl ;
+        final String finalUrl = partUrl;
 
-        BaseRequest baseRequest = new BaseRequest(method, finalUrl, new Response.Listener<JSONObject>() {
+        BaseRequest baseRequest = new BaseRequest(method, headers, finalUrl, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
                 if (BuildConfig.DEBUG)
@@ -79,9 +104,60 @@ public class HttpRequest {
         mQueue.add(baseRequest);
     }
 
+    //生成SSLSocketFactory
+    private static SSLSocketFactory initSSLSocketFactory(Context context, String SSLFileNameInAssets) {
+        //生成证书:Certificate
+        CertificateFactory cf = null;
+        SSLSocketFactory factory = null;
+        try {
+            cf = CertificateFactory.getInstance("X.509");
+            InputStream caInput = context.getAssets().open(SSLFileNameInAssets);
+            Certificate ca = null;
+            try {
+                ca = cf.generateCertificate(caInput);
+            } finally {
+                try {
+                    caInput.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            //初始化公钥:keyStore
+            String keyType = KeyStore.getDefaultType();
+            KeyStore keyStore = KeyStore.getInstance(keyType);
+            keyStore.load(null, null);
+            keyStore.setCertificateEntry("ca", ca);
+
+            //初始化TrustManagerFactory
+            String algorithm = TrustManagerFactory.getDefaultAlgorithm();
+            TrustManagerFactory managerFactory = TrustManagerFactory.getInstance(algorithm);
+            managerFactory.init(keyStore);
+
+            //初始化sslContext
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, managerFactory.getTrustManagers(), null);
+            factory = sslContext.getSocketFactory();
+
+        } catch (CertificateException e) {
+            e.printStackTrace();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        } catch (KeyStoreException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (KeyManagementException e) {
+            e.printStackTrace();
+        }
+
+        return factory;
+    }
+
     class BaseRequest extends JsonObjectRequest {
 
         private Map<String, String> params;
+        private Parameter headers;
 
         public BaseRequest(int method, String url, String requestBody, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
             super(method, url, requestBody, listener, errorListener);
@@ -91,9 +167,10 @@ public class HttpRequest {
             super(url, listener, errorListener);
         }
 
-        public BaseRequest(int method, String url, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        public BaseRequest(int method, Parameter headers, String url, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
             super(method, url, listener, errorListener);
             this.params = params;
+            this.headers = headers;
         }
 
         public BaseRequest(int method, String url, JSONObject jsonRequest, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
@@ -107,14 +184,16 @@ public class HttpRequest {
         protected Map<String, String> getParams()
                 throws com.android.volley.AuthFailureError {
             return params;
-        };
+        }
 
         @Override
         public Map<String, String> getHeaders() throws AuthFailureError {
-            Map<String, String> headers = new HashMap<String, String>();
-            headers.put("Charset", "UTF-8");
-            headers.put("Content-Type", "application/json");
-            headers.put("Accept-Encoding", "gzip,deflate");
+//            headers.put("Charset", "UTF-8");
+//            headers.put("Content-Type", "application/json");
+//            headers.put("Accept-Encoding", "gzip,deflate");
+            if (headers == null || headers.isEmpty()) {
+                return Collections.emptyMap();
+            }
             return headers;
         }
     }

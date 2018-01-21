@@ -1,18 +1,16 @@
 # BaseVolley
 因为觉得每次写Volley请求太麻烦而进行的二次封装
 
-# 注意
-本封装基于：compile 'com.mcxiaoke.volley:library:1.0.19'
-
 ### 版本
-3.1
+4.0
 
 废弃了ErrorListener监听器，合并请求成功和错误的返回监听器为同一个新的监听器：ResponseListener，请在ResponseListener中直接判断Exception是否为空，若为空即请求成功。
 
 同时，在HttpRequest中提供了基础请求类BaseRequest可以直接重写其 getHeaders() 方法以实现请求头的修改。
 
 ### 请注意
-目录中的“CORE”为核心文件，要查看项目源代码请进入该目录即可，本目录下其他文件为演示项目工程文件。
+1) 本封装基于：compile 'com.mcxiaoke.volley:library:1.0.19'
+2) 目录中的“CORE”为核心文件，要查看项目源代码请进入该目录即可，本目录下其他文件为演示项目工程文件。
 
 ### 原因
 1) Volley的请求参数不支持连续添加，写法不够轻松简洁
