@@ -1,6 +1,9 @@
 # BaseVolley
 因为觉得每次写Volley请求太麻烦而进行的二次封装
 
+# 注意
+本封装基于：compile 'com.mcxiaoke.volley:library:1.0.19'
+
 ### 版本
 3.1
 
