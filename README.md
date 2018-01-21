@@ -64,5 +64,6 @@ Parameter是有序参数，方便某些情况下对参数进行加密和校验�
 2) 以附带SSL证书名的方式创建请求：
 ```
 HttpRequest.getInstance(me,"ssl.crt")
+...
 ```
 即可使用Https请求方式。
