@@ -2,7 +2,9 @@
 因为觉得每次写Volley请求太麻烦而进行的二次封装
 
 ### 版本
-4.0
+4.1
+
+修复了服务器接收参数为空的问题，主要因为JsonObjectRequest并不回调 getParams() 导致的，方便起见我们换成了StringRequest
 
 废弃了ErrorListener监听器，合并请求成功和错误的返回监听器为同一个新的监听器：ResponseListener，请在ResponseListener中直接判断Exception是否为空，若为空即请求成功。
 
