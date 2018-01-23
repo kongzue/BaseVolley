@@ -1,6 +1,7 @@
 package com.kongzue.basevolley.util;
 
 import android.content.Context;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.android.volley.AuthFailureError;
@@ -10,6 +11,7 @@ import com.android.volley.Response;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.HurlStack;
 import com.android.volley.toolbox.JsonObjectRequest;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.kongzue.basevolley.BuildConfig;
 import com.kongzue.basevolley.listener.ResponseListener;
@@ -34,7 +36,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 /**
  * Created by ZhangChao on 2017/12/28.
- * ver:4.0
+ * ver:4.1
  */
 
 public class HttpRequest {
@@ -98,12 +100,17 @@ public class HttpRequest {
 
         final String finalUrl = partUrl;
 
-        BaseRequest baseRequest = new BaseRequest(method, headers, finalUrl, new Response.Listener<JSONObject>() {
+        BaseRequest baseRequest = new BaseRequest(method, headers, finalUrl, new Response.Listener<String>() {
             @Override
-            public void onResponse(JSONObject response) {
-                if (BuildConfig.DEBUG)
-                    Log.i(">>>", "request:" + finalUrl + "\nparameter:" + parameter.toParameterString() + "\nresponse:" + response.toString());
-                listener.onResponse(response, null);
+            public void onResponse(String response) {
+                try {
+                    listener.onResponse(new JSONObject(response), null);
+                    if (BuildConfig.DEBUG)
+                        Log.i(">>>", "request:" + finalUrl + "\nparameter:" + parameter.toParameterString() + "\nresponse:" + response.toString());
+                } catch (Exception e) {
+                    listener.onResponse(null, e);
+                    e.printStackTrace();
+                }
             }
         }, new Response.ErrorListener() {
             @Override
@@ -170,45 +177,39 @@ public class HttpRequest {
         return factory;
     }
 
-    class BaseRequest extends JsonObjectRequest {
+    class BaseRequest extends StringRequest {
 
-        private Map<String, String> params;
+        private Parameter params;
         private Parameter headers;
 
-        public BaseRequest(int method, String url, String requestBody, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-            super(method, url, requestBody, listener, errorListener);
+        public BaseRequest(int method, String url, Response.Listener<String> listener, Response.ErrorListener errorListener) {
+            super(method, url, listener, errorListener);
         }
 
-        public BaseRequest(String url, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        public BaseRequest(String url, Response.Listener<String> listener, Response.ErrorListener errorListener) {
             super(url, listener, errorListener);
         }
 
-        public BaseRequest(int method, Parameter headers, String url, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
+        public BaseRequest(int method, Parameter headers, Parameter params, String url, Response.Listener<String> listener, Response.ErrorListener errorListener) {
             super(method, url, listener, errorListener);
             this.params = params;
             this.headers = headers;
         }
 
-        public BaseRequest(int method, String url, JSONObject jsonRequest, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-            super(method, url, jsonRequest, listener, errorListener);
+        public BaseRequest(int method, Parameter headers, String url, Response.Listener<String> listener, Response.ErrorListener errorListener) {
+            super(method, url, listener, errorListener);
+            this.headers = headers;
         }
 
-        public BaseRequest(String url, JSONObject jsonRequest, Response.Listener<JSONObject> listener, Response.ErrorListener errorListener) {
-            super(url, jsonRequest, listener, errorListener);
-        }
-
-        protected Map<String, String> getParams()
-                throws com.android.volley.AuthFailureError {
+        @Override
+        protected Map<String, String> getParams() throws AuthFailureError {
             return params;
         }
 
         @Override
         public Map<String, String> getHeaders() throws AuthFailureError {
-//            headers.put("Charset", "UTF-8");
-//            headers.put("Content-Type", "application/json");
-//            headers.put("Accept-Encoding", "gzip,deflate");
-            if (headers == null || headers.isEmpty()) {
-                return Collections.emptyMap();
+            if (headers == null) {
+                headers = new Parameter();
             }
             return headers;
         }
